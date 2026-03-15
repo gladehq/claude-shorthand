@@ -56,10 +56,13 @@ def main():
         comp_t = result.get('compressed_tokens', len(compressed)//4)
         savings = round((1 - (comp_t / orig_t)) * 100, 1)
         
-        sys.stderr.write(f"\n[Shorthand] 📉 {orig_t} -> {comp_t} tokens (-{savings}%)\n")
+        msg = f"{__import__('datetime').datetime.now().strftime('%H:%M:%S')} [Shorthand] 📉 {orig_t} -> {comp_t} tokens (-{savings}%)\n"
+        with open(os.path.expanduser("~/.claude/plugins/shorthand/compress.log"), "a") as log:
+            log.write(msg)
         print(json.dumps({"prompt": compressed}))
     except Exception as e:
-        sys.stderr.write(f"\n[Shorthand Error] {str(e)}\n")
+        with open(os.path.expanduser("~/.claude/plugins/shorthand/compress.log"), "a") as log:
+            log.write(f"{__import__('datetime').datetime.now().strftime('%H:%M:%S')} [Shorthand Error] {str(e)}\n")
         print(json.dumps({"prompt": prompt}))
 
 if __name__ == "__main__":
