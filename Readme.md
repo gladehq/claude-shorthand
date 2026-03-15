@@ -148,18 +148,6 @@ The following are protected out of the box across all languages:
 
 `install.sh` and `uninstall.sh` are bash scripts and will not run in native Windows CMD or PowerShell. The compression core (`compress.py`) is pure Python and is already cross-platform. The only gap is the installer and uninstaller.
 
-**Want to help?** If you're a Windows developer, contributions are very welcome. What's needed:
-
-- `install.ps1`, PowerShell equivalent of `install.sh`
-- `uninstall.ps1`, PowerShell equivalent of `uninstall.sh`
-
-The scripts would need to handle:
-- Installing `llmlingua` via `pip` (not `pip3`)
-- Copying files to `%USERPROFILE%\.claude\plugins\shorthand\`
-- Copying the skill to `%USERPROFILE%\.claude\skills\shorthand\`
-- Registering the hook in `%USERPROFILE%\.claude\settings.json` via PowerShell JSON manipulation
-- Pre-downloading the LLMLingua-2 model
-
 If you'd like to take this on, please open an issue or submit a PR. Any contribution, no matter how small, is appreciated.
 
 ---
