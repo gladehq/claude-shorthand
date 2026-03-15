@@ -1,25 +1,67 @@
-import sys, json, os
+import sys, json, os, datetime
 
-# Try to import LLMLingua-2, fallback to original if missing
 try:
     from llmlingua import PromptCompressor
 except ImportError:
     class PromptCompressor:
         def __init__(self, **kwargs): pass
-        def compress_prompt(self, p, **kwargs): 
+        def compress_prompt(self, p, **kwargs):
             return {"compressed_prompt": p, "origin_tokens": len(p)//4, "compressed_tokens": len(p)//4}
 
-# Path to toggle state
-STATE_FILE = os.path.expanduser("~/.claude/plugins/shorthand/bin/state.json")
+PLUGIN_DIR  = os.path.expanduser("~/.claude/plugins/shorthand")
+STATE_FILE  = os.path.join(PLUGIN_DIR, "bin", "state.json")
+LOG_FILE    = os.path.join(PLUGIN_DIR, "compress.log")
+CONFIG_FILE = os.path.join(PLUGIN_DIR, "config.json")
+
+# Expanded defaults covering multiple languages and frameworks
+DEFAULT_FORCE_TOKENS = [
+    # File extensions
+    '.php', '.js', '.ts', '.py', '.rb', '.go', '.java', '.cs', '.cpp', '.c', '.rs',
+    '.vue', '.jsx', '.tsx', '.html', '.css', '.env', '.json', '.yaml', '.yml',
+    # OOP / structure
+    'function', 'class', 'interface', 'abstract', 'public', 'private', 'protected', 'static',
+    'def', 'self', 'import', 'export', 'return', 'async', 'await', 'yield',
+    # Errors & exceptions
+    'Error', 'Exception', 'Warning', 'Traceback', 'TypeError', 'ValueError',
+    'KeyError', 'AttributeError', 'RuntimeError', 'null', 'undefined', 'nil', 'None',
+    # Database
+    'SQL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'WHERE', 'JOIN', 'FROM', 'GROUP BY',
+    # HTTP / API
+    'HTTP', 'API', 'URL', 'JSON', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE',
+]
+
+def load_config():
+    defaults = {"rate": 0.4, "threshold": 800, "extra_force_tokens": []}
+    if not os.path.exists(CONFIG_FILE):
+        return defaults
+    try:
+        with open(CONFIG_FILE, 'r') as f:
+            defaults.update(json.load(f))
+    except Exception:
+        pass
+    return defaults
 
 def get_state():
-    if not os.path.exists(STATE_FILE): return True
+    if not os.path.exists(STATE_FILE):
+        return "on"
     try:
         with open(STATE_FILE, 'r') as f:
-            data = json.load(f)
-            return data.get("enabled") != "off"
-    except:
-        return True
+            return json.load(f).get("enabled", "on")
+    except Exception:
+        return "on"
+
+def write_log(msg):
+    try:
+        # Rotate: keep last 200 lines if file exceeds 50KB
+        if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 50 * 1024:
+            with open(LOG_FILE, 'r') as f:
+                lines = f.readlines()
+            with open(LOG_FILE, 'w') as f:
+                f.writelines(lines[-200:])
+        with open(LOG_FILE, 'a') as f:
+            f.write(msg)
+    except Exception:
+        pass
 
 def main():
     try:
@@ -31,38 +73,45 @@ def main():
     except Exception:
         prompt = ""
 
-    # Threshold check: Only compress if enabled and prompt is long (> 800 chars)
-    if not get_state() or len(prompt) < 800:
+    config = load_config()
+    state  = get_state()
+
+    if state == "off" or len(prompt) < config["threshold"]:
         print(json.dumps({"prompt": prompt}))
         return
 
+    dry_run = (state == "dry-run")
+
     try:
+        force_tokens = DEFAULT_FORCE_TOKENS + config.get("extra_force_tokens", [])
+
         compressor = PromptCompressor(
             model_name="microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank",
             use_llmlingua2=True,
             device_map="cpu"
         )
-        
-        # rate=0.4 keeps 40% of the original info
+
         result = compressor.compress_prompt(
-            prompt, 
-            rate=0.4, 
-            force_tokens=['.php', '.js', 'SQL', 'Error', 'Exception', 'public', 'private', 'function']
+            prompt,
+            rate=config["rate"],
+            force_tokens=force_tokens
         )
-        compressed = result['compressed_prompt']
-        
-        # Report savings to terminal stderr
-        orig_t = result.get('origin_tokens', len(prompt)//4)
-        comp_t = result.get('compressed_tokens', len(compressed)//4)
-        savings = round((1 - (comp_t / orig_t)) * 100, 1)
-        
-        msg = f"{__import__('datetime').datetime.now().strftime('%H:%M:%S')} [Shorthand] 📉 {orig_t} -> {comp_t} tokens (-{savings}%)\n"
-        with open(os.path.expanduser("~/.claude/plugins/shorthand/compress.log"), "a") as log:
-            log.write(msg)
-        print(json.dumps({"prompt": compressed}))
+        compressed = result["compressed_prompt"]
+
+        orig_t   = result.get("origin_tokens", len(prompt) // 4)
+        comp_t   = result.get("compressed_tokens", len(compressed) // 4)
+        savings  = round((1 - (comp_t / orig_t)) * 100, 1)
+        ts       = datetime.datetime.now().strftime("%H:%M:%S")
+        mode_tag = " [dry-run]" if dry_run else ""
+
+        write_log(f"{ts} [Shorthand{mode_tag}] 📉 {orig_t} -> {comp_t} tokens (-{savings}%)\n")
+
+        # Dry-run: log stats but send original prompt unchanged
+        print(json.dumps({"prompt": prompt if dry_run else compressed}))
+
     except Exception as e:
-        with open(os.path.expanduser("~/.claude/plugins/shorthand/compress.log"), "a") as log:
-            log.write(f"{__import__('datetime').datetime.now().strftime('%H:%M:%S')} [Shorthand Error] {str(e)}\n")
+        ts = datetime.datetime.now().strftime("%H:%M:%S")
+        write_log(f"{ts} [Shorthand Error] {str(e)}\n")
         print(json.dumps({"prompt": prompt}))
 
 if __name__ == "__main__":
