@@ -1,0 +1,12 @@
+{
+  "name": "PromptCompressor",
+  "version": "1.0.0",
+  "description": "Auto-shorthand long prompts and stack traces for token efficiency.",
+  "hooks": [
+    {
+      "event": "UserPromptSubmit",
+      "type": "command",
+      "command": "python3 $HOME/.claude/plugins/shorthand/bin/compress.py"
+    }
+  ]
+}
