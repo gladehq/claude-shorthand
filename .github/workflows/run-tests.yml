@@ -34,9 +34,9 @@ jobs:
       - name: Test short prompt passes through unchanged
         run: |
           RESULT=$(echo '{"prompt": "short prompt"}' | python3 bin/compress.py)
-          echo "$RESULT" | python3 -c "
-          import sys, json
-          data = json.load(sys.stdin)
+          python3 -c "
+          import json
+          data = json.loads('$RESULT')
           assert data['prompt'] == 'short prompt', f'Expected passthrough, got: {data}'
           print('Short prompt passthrough: OK')
           "
@@ -44,14 +44,15 @@ jobs:
       - name: Test long prompt is compressed
         run: |
           LONG=$(python3 -c "print('x ' * 500)")
+          ORIG_LEN=${#LONG}
           RESULT=$(echo "{\"prompt\": \"$LONG\"}" | python3 bin/compress.py)
-          echo "$RESULT" | python3 -c "
-          import sys, json
-          data = json.load(sys.stdin)
-          compressed = data['prompt']
-          assert len(compressed) < len('$LONG'), 'Expected compression but prompt was not reduced'
-          print(f'Long prompt compressed: OK ({len(compressed)} chars < ${#LONG} chars)')
-          "
+          COMP_LEN=$(echo "$RESULT" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['prompt']))")
+          if [ "$COMP_LEN" -lt "$ORIG_LEN" ]; then
+            echo "Long prompt compressed: OK ($COMP_LEN chars < $ORIG_LEN chars)"
+          else
+            echo "FAIL: Expected compression, orig=$ORIG_LEN result=$COMP_LEN"
+            exit 1
+          fi
 
       - name: Test disabled state passes through unchanged
         run: |
@@ -61,9 +62,11 @@ jobs:
           LONG=$(python3 -c "print('x ' * 500)")
           ORIG_LEN=${#LONG}
           RESULT=$(echo "{\"prompt\": \"$LONG\"}" | HOME="$PLUGIN_DIR" python3 bin/compress.py)
-          RESULT_LEN=$(echo "$RESULT" | python3 -c "import sys, json; print(len(json.load(sys.stdin)['prompt']))")
-          python3 -c "
-orig, result = $ORIG_LEN, $RESULT_LEN
-assert result >= orig * 0.95, f'Expected passthrough when disabled, orig={orig} result={result}'
-print('Disabled state passthrough: OK')
-          "
+          COMP_LEN=$(echo "$RESULT" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['prompt']))")
+          THRESHOLD=$((ORIG_LEN * 95 / 100))
+          if [ "$COMP_LEN" -ge "$THRESHOLD" ]; then
+            echo "Disabled state passthrough: OK"
+          else
+            echo "FAIL: Expected passthrough when disabled, orig=$ORIG_LEN result=$COMP_LEN"
+            exit 1
+          fi
