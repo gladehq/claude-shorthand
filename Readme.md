@@ -9,9 +9,11 @@ This plugin integrates **LLMLingua-2** directly into your Claude Code workflow t
 ## Features
 
 - **Smart Shorthanding** — Uses BERT-based compression to strip redundant boilerplate while keeping your code logic intact.
-- **Developer First** — Specifically tuned to protect SQL queries, file paths (`.php`, `.js`, `.py`), and exception names.
-- **Token Stats Logging** — Compression stats are written to a log file after every compressed prompt.
-- **Dynamic Toggle** — Enable or disable compression on the fly with the `/shorthand` slash command.
+- **Multi-language** — Protects tokens across PHP, Python, JS/TS, Ruby, Go, Java, Rust, and more out of the box.
+- **Configurable** — Tune compression rate, threshold, and protected tokens via `config.json`.
+- **Token Stats Logging** — Every compression is logged with timestamp and savings to `compress.log`.
+- **Log Rotation** — Log is automatically trimmed to 200 lines when it exceeds 50KB.
+- **Dynamic Toggle** — Enable, disable, or switch to dry-run mode with `/shorthand`.
 - **Global** — Applies to every project automatically. No per-project setup needed.
 
 ---
@@ -41,39 +43,29 @@ This plugin integrates **LLMLingua-2** directly into your Claude Code workflow t
    - Install `llmlingua` and its dependencies via `pip3`
    - Copy plugin files to `~/.claude/plugins/shorthand/`
    - Copy the `/shorthand` skill to `~/.claude/skills/shorthand/`
-   - Make `compress.py` executable
+   - Copy `config.json` to `~/.claude/plugins/shorthand/` (skipped if one already exists)
+   - Auto-register the `UserPromptSubmit` hook in `~/.claude/settings.json`
+   - Pre-download the LLMLingua-2 BERT model (~400MB) so first use is instant
 
-4. **Register the hook** — Add the following to your `~/.claude/settings.json` under the top-level object:
-   ```json
-   "hooks": {
-     "UserPromptSubmit": [
-       {
-         "hooks": [
-           {
-             "type": "command",
-             "command": "python3 $HOME/.claude/plugins/shorthand/bin/compress.py"
-           }
-         ]
-       }
-     ]
-   }
-   ```
+4. **Restart Claude Code** to activate.
 
-5. **Restart Claude Code** to activate the plugin.
+---
 
-> **Note:** `pip` is not aliased on all systems. The installer uses `pip3` explicitly to ensure compatibility.
+## Uninstallation
 
-> **macOS Note:** LLMLingua runs on CPU (`device_map="cpu"`) since Macs do not have CUDA. First run downloads the BERT-base model (~400MB) from HuggingFace. Subsequent runs are near-instant.
+```bash
+./uninstall.sh
+```
+
+This removes all plugin files, the skill, and the hook entry from `settings.json`.
 
 ---
 
 ## How to Use
 
-The plugin runs silently in the background on every prompt.
-
 ### Automatic Mode
 
-Whenever you submit a prompt exceeding **800 characters**, the plugin automatically compresses it before sending to Claude. Compression stats are appended to a log file:
+Every prompt over **800 characters** is automatically compressed before being sent to Claude. Stats are logged silently:
 
 ```
 15:29:54 [Shorthand] 📉 5462 -> 2701 tokens (-50.5%)
@@ -81,40 +73,48 @@ Whenever you submit a prompt exceeding **800 characters**, the plugin automatica
 
 ### Monitoring Stats
 
-Open a second terminal tab and run:
-
 ```bash
 tail -f ~/.claude/plugins/shorthand/compress.log
 ```
 
-Every compressed prompt will append a timestamped line showing tokens saved.
-
-### Manual Control
+### Slash Commands
 
 | Command | Description |
 |---|---|
-| `/shorthand on` | Enable automatic compression |
-| `/shorthand off` | Disable automatic compression |
+| `/shorthand on` | Enable compression (default) |
+| `/shorthand off` | Disable compression |
+| `/shorthand dry-run` | Log stats but send original prompt unchanged |
+| `/shorthand status` | Show current mode and last 5 log entries |
 
 ---
 
 ## Configuration
 
-To tune the sensitivity of the compressor, edit `bin/compress.py`:
+Edit `~/.claude/plugins/shorthand/config.json` to customise behaviour:
 
-```python
-# Minimum character count to trigger compression (default: 800)
-if len(prompt) < 800:
-    ...
-
-# Compression rate: lower = more aggressive, higher = more detail retained
-rate = 0.4
+```json
+{
+  "rate": 0.4,
+  "threshold": 800,
+  "extra_force_tokens": ["MyClass", "myFunction", ".blade.php"]
+}
 ```
 
-| Parameter | Default | Description |
+| Key | Default | Description |
 |---|---|---|
-| `len(prompt) < 800` | `800` | Minimum characters required to trigger compression |
-| `rate` | `0.4` | Compression aggressiveness (`0.2` = more, `0.6` = less) |
+| `rate` | `0.4` | Compression aggressiveness — `0.2` = more aggressive, `0.6` = less |
+| `threshold` | `800` | Minimum characters before compression triggers |
+| `extra_force_tokens` | `[]` | Additional tokens to always preserve (merged with built-in defaults) |
+
+### Default Protected Tokens
+
+The following are protected out of the box across all languages:
+
+- **File extensions:** `.php` `.js` `.ts` `.py` `.rb` `.go` `.java` `.cs` `.cpp` `.rs` `.vue` `.jsx` `.tsx`
+- **Keywords:** `function` `class` `def` `self` `import` `async` `await` `return`
+- **Errors:** `Error` `Exception` `Traceback` `TypeError` `ValueError` `KeyError` `AttributeError`
+- **Database:** `SQL` `SELECT` `INSERT` `UPDATE` `DELETE` `WHERE` `JOIN`
+- **HTTP/API:** `HTTP` `API` `GET` `POST` `PUT` `PATCH` `JSON`
 
 ---
 
@@ -123,13 +123,14 @@ rate = 0.4
 ```
 ~/.claude/plugins/shorthand/
 ├── bin/
-│   ├── compress.py       # Hook entrypoint — compresses prompts via LLMLingua-2
-│   ├── state.json        # Created at runtime — stores enabled/disabled state
-│   └── compress.log      # Appended at runtime — token savings per prompt
+│   ├── compress.py       # Hook entrypoint
+│   ├── state.json        # Runtime state (on / off / dry-run)
+│   └── compress.log      # Token savings log (auto-rotated at 50KB)
+├── config.json           # User configuration
 └── plugin.json           # Plugin metadata
 
 ~/.claude/skills/shorthand/
-└── SKILL.md              # Slash command definition for /shorthand
+└── SKILL.md              # /shorthand slash command
 ```
 
 ---
@@ -137,9 +138,15 @@ rate = 0.4
 ## Changelog
 
 ### 2026-03-15
-- Fixed `install.sh` to use `pip3` instead of `pip` (resolves `command not found` on macOS)
-- Fixed skill registration path — skills must live in `~/.claude/skills/shorthand/`, not inside the plugin directory
-- Registered `UserPromptSubmit` hook in `~/.claude/settings.json`
-- Fixed LLMLingua CUDA error on macOS by adding `device_map="cpu"` to `PromptCompressor` init
-- Fixed terminal corruption caused by writing stats to `/dev/tty` mid-TUI render — stats now append to `compress.log` instead
-- Verified end-to-end: prompts under 800 chars pass through unchanged; prompts over 800 chars compress ~50-60%
+- Fixed `install.sh` to use `pip3` instead of `pip`
+- Fixed skill registration path to `~/.claude/skills/shorthand/`
+- Fixed LLMLingua CUDA error on macOS — added `device_map="cpu"`
+- Fixed terminal corruption — stats now go to `compress.log` instead of `/dev/tty`
+- `install.sh` now auto-registers the hook in `settings.json`
+- `install.sh` now pre-downloads the model so first use is instant
+- Added `uninstall.sh` for clean removal
+- Added `config.json` for user-configurable rate, threshold, and extra force tokens
+- Expanded default `force_tokens` to cover PHP, Python, JS/TS, Ruby, Go, Java, Rust, and more
+- Implemented `/shorthand dry-run` — logs stats but passes original prompt unchanged
+- Implemented `/shorthand status` — shows current mode and recent log activity
+- Added log rotation — trims to 200 lines when file exceeds 50KB
