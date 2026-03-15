@@ -38,8 +38,9 @@ def main():
 
     try:
         compressor = PromptCompressor(
-            model_name="microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank", 
-            use_llmlingua2=True
+            model_name="microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank",
+            use_llmlingua2=True,
+            device_map="cpu"
         )
         
         # rate=0.4 keeps 40% of the original info

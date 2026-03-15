@@ -1,4 +1,4 @@
-# 🚀 Claude Shorthand Plugin (2026)
+# Claude Shorthand Plugin (2026)
 
 > Extend your context window and slash token costs.
 
@@ -6,7 +6,7 @@ This plugin integrates **LLMLingua-2** directly into your Claude Code workflow t
 
 ---
 
-## ✨ Features
+## Features
 
 - **Smart Shorthanding** — Uses BERT-based compression to strip redundant framework boilerplate while keeping your code logic intact.
 - **Developer First** — Specifically tuned to protect SQL queries, file paths (`.php`, `.js`, `.py`), and exception names.
@@ -15,29 +15,60 @@ This plugin integrates **LLMLingua-2** directly into your Claude Code workflow t
 
 ---
 
-## 🛠️ Installation
+## Requirements
 
-1. **Extract the Package** — Unzip `claude-shorthand-plugin.zip` into your preferred development directory.
-
-2. **Navigate to the Folder** — Open your terminal and `cd` into the extracted directory:
-   ```bash
-   cd claude-shorthand-plugin
-   ```
-
-3. **Run the Installer** — Execute the installation script to set up local dependencies and register the hook:
-   ```bash
-   ./install.sh
-   ```
-
-4. **Restart** — Restart your Claude Code instance to activate the plugin.
+- Python 3.9+
+- `pip3` available on PATH
+- Claude Code (CLI)
 
 ---
 
-## 🎮 How to Use
+## Installation
+
+1. **Clone or extract** the repository into your preferred directory.
+
+2. **Navigate to the folder:**
+   ```bash
+   cd claude-shorthand
+   ```
+
+3. **Run the installer:**
+   ```bash
+   ./install.sh
+   ```
+   This will:
+   - Install `llmlingua` and its dependencies via `pip3`
+   - Copy plugin files to `~/.claude/plugins/shorthand/`
+   - Copy the `/shorthand` skill to `~/.claude/plugins/shorthand/skills/shorthand/`
+   - Make `compress.py` executable
+
+4. **Register the hook** — Add the following to your `~/.claude/settings.json` under the top-level object:
+   ```json
+   "hooks": {
+     "UserPromptSubmit": [
+       {
+         "hooks": [
+           {
+             "type": "command",
+             "command": "python3 $HOME/.claude/plugins/shorthand/bin/compress.py"
+           }
+         ]
+       }
+     ]
+   }
+   ```
+
+5. **Restart Claude Code** to activate the plugin.
+
+> **Note:** `pip` is not aliased on all systems. The installer uses `pip3` explicitly to ensure compatibility.
+
+---
+
+## How to Use
 
 The plugin runs silently in the background to save you credits and context space.
 
-### 📉 Automatic Mode
+### Automatic Mode
 
 Whenever you paste a prompt or stack trace exceeding **800 characters**, the plugin automatically compresses the text and displays an efficiency report in your terminal:
 
@@ -45,7 +76,7 @@ Whenever you paste a prompt or stack trace exceeding **800 characters**, the plu
 [Shorthand] 📉 1540 -> 420 tokens (-72.7%)
 ```
 
-### 🕹️ Manual Control
+### Manual Control
 
 Manage the compression engine using these custom slash commands:
 
@@ -57,7 +88,7 @@ Manage the compression engine using these custom slash commands:
 
 ---
 
-## 📝 Configuration
+## Configuration
 
 To tune the sensitivity of the compressor, edit `bin/compress.py`:
 
@@ -74,6 +105,30 @@ rate = 0.4
 |---|---|---|
 | `len(prompt) < 800` | `800` | Minimum characters required to trigger compression |
 | `rate` | `0.4` | Compression aggressiveness (`0.2` = more, `0.6` = less) |
+
+---
+
+## File Structure
+
+```
+~/.claude/plugins/shorthand/
+├── bin/
+│   ├── compress.py      # Hook entrypoint — compresses prompts via LLMLingua-2
+│   └── state.json       # Created at runtime — stores enabled/disabled state
+├── skills/
+│   └── shorthand/
+│       └── SKILL.md     # Slash command definition for /shorthand
+└── plugin.json          # Plugin metadata
+```
+
+---
+
+## Changelog
+
+### 2026-03-15
+- Fixed `install.sh` to use `pip3` instead of `pip` (resolves `command not found` on macOS systems where `pip` is not aliased)
+- Registered `UserPromptSubmit` hook in `~/.claude/settings.json`
+- Verified end-to-end: `compress.py` correctly passes through short prompts and triggers LLMLingua-2 for prompts over 800 characters
 
 ---
 
