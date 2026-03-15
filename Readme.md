@@ -1,4 +1,4 @@
-# Claude Shorthand Plugin (2026)
+# Claude Shorthand
 
 > Extend your context window and slash token costs.
 
