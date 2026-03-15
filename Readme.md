@@ -124,8 +124,8 @@ The following are protected out of the box across all languages:
 ~/.claude/plugins/shorthand/
 ├── bin/
 │   ├── compress.py       # Hook entrypoint
-│   ├── state.json        # Runtime state (on / off / dry-run)
-│   └── compress.log      # Token savings log (auto-rotated at 50KB)
+│   └── state.json        # Runtime state (on / off / dry-run)
+├── compress.log          # Token savings log (auto-rotated at 50KB)
 ├── config.json           # User configuration
 └── plugin.json           # Plugin metadata
 

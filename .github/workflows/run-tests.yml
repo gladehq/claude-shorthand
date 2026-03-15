@@ -1,0 +1,65 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install llmlingua --quiet
+
+      - name: Validate config.json
+        run: python3 -c "import json; json.load(open('config.json')); print('config.json is valid')"
+
+      - name: Validate shell scripts
+        run: |
+          bash -n install.sh   && echo "install.sh syntax OK"
+          bash -n uninstall.sh && echo "uninstall.sh syntax OK"
+
+      - name: Test short prompt passes through unchanged
+        run: |
+          RESULT=$(echo '{"prompt": "short prompt"}' | python3 bin/compress.py)
+          echo "$RESULT" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          assert data['prompt'] == 'short prompt', f'Expected passthrough, got: {data}'
+          print('Short prompt passthrough: OK')
+          "
+
+      - name: Test long prompt is compressed
+        run: |
+          LONG=$(python3 -c "print('x ' * 500)")
+          RESULT=$(echo "{\"prompt\": \"$LONG\"}" | python3 bin/compress.py)
+          echo "$RESULT" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          compressed = data['prompt']
+          assert len(compressed) < len('$LONG'), 'Expected compression but prompt was not reduced'
+          print(f'Long prompt compressed: OK ({len(compressed)} chars < ${#LONG} chars)')
+          "
+
+      - name: Test disabled state passes through unchanged
+        run: |
+          mkdir -p /tmp/shorthand-test/bin
+          echo '{"enabled": "off"}' > /tmp/shorthand-test/bin/state.json
+          LONG=$(python3 -c "print('x ' * 500)")
+          RESULT=$(HOME=/tmp/shorthand-test echo "{\"prompt\": \"$LONG\"}" | python3 bin/compress.py)
+          echo "$RESULT" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          assert data['prompt'].strip() == '$LONG'.strip(), 'Expected passthrough when disabled'
+          print('Disabled state passthrough: OK')
+          "

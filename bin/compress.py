@@ -27,7 +27,7 @@ DEFAULT_FORCE_TOKENS = [
     # Database
     'SQL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'WHERE', 'JOIN', 'FROM', 'GROUP BY',
     # HTTP / API
-    'HTTP', 'API', 'URL', 'JSON', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE',
+    'HTTP', 'API', 'URL', 'JSON', 'GET', 'POST', 'PUT', 'PATCH',
 ]
 
 def load_config():
