@@ -2,19 +2,19 @@
 
 > Extend your context window and slash token costs.
 
-This plugin integrates **LLMLingua-2** directly into your Claude Code workflow to automatically compress massive prompts and stack traces by **up to 60%** — without losing critical debugging details.
+This plugin integrates **LLMLingua-2** directly into your Claude Code workflow to automatically compress massive prompts and stack traces by **up to 60%**, without losing critical debugging details.
 
 ---
 
 ## Features
 
-- **Smart Shorthanding** — Uses BERT-based compression to strip redundant boilerplate while keeping your code logic intact.
-- **Multi-language** — Protects tokens across PHP, Python, JS/TS, Ruby, Go, Java, Rust, and more out of the box.
-- **Configurable** — Tune compression rate, threshold, and protected tokens via `config.json`.
-- **Token Stats Logging** — Every compression is logged with timestamp and savings to `compress.log`.
-- **Log Rotation** — Log is automatically trimmed to 200 lines when it exceeds 50KB.
-- **Dynamic Toggle** — Enable, disable, or switch to dry-run mode with `/shorthand`.
-- **Global** — Applies to every project automatically. No per-project setup needed.
+- **Smart Shorthanding.** Uses BERT-based compression to strip redundant boilerplate while keeping your code logic intact.
+- **Multi-language.** Protects tokens across PHP, Python, JS/TS, Ruby, Go, Java, Rust, and more out of the box.
+- **Configurable.** Tune compression rate, threshold, and protected tokens via `config.json`.
+- **Token Stats Logging.** Every compression is logged with timestamp and savings to `compress.log`.
+- **Log Rotation.** Log is automatically trimmed to 200 lines when it exceeds 50KB.
+- **Dynamic Toggle.** Enable, disable, or switch to dry-run mode with `/shorthand`.
+- **Global.** Applies to every project automatically. No per-project setup needed.
 
 ---
 
@@ -102,7 +102,7 @@ Edit `~/.claude/plugins/shorthand/config.json` to customise behaviour:
 
 | Key | Default | Description |
 |---|---|---|
-| `rate` | `0.4` | Compression aggressiveness — `0.2` = more aggressive, `0.6` = less |
+| `rate` | `0.4` | Compression aggressiveness. `0.2` = more aggressive, `0.6` = less |
 | `threshold` | `800` | Minimum characters before compression triggers |
 | `extra_force_tokens` | `[]` | Additional tokens to always preserve (merged with built-in defaults) |
 
@@ -146,12 +146,12 @@ The following are protected out of the box across all languages:
 
 ### Windows Limitation
 
-`install.sh` and `uninstall.sh` are bash scripts and will not run in native Windows CMD or PowerShell. The compression core (`compress.py`) is pure Python and is already cross-platform — the only gap is the installer and uninstaller.
+`install.sh` and `uninstall.sh` are bash scripts and will not run in native Windows CMD or PowerShell. The compression core (`compress.py`) is pure Python and is already cross-platform. The only gap is the installer and uninstaller.
 
 **Want to help?** If you're a Windows developer, contributions are very welcome. What's needed:
 
-- `install.ps1` — PowerShell equivalent of `install.sh`
-- `uninstall.ps1` — PowerShell equivalent of `uninstall.sh`
+- `install.ps1`, PowerShell equivalent of `install.sh`
+- `uninstall.ps1`, PowerShell equivalent of `uninstall.sh`
 
 The scripts would need to handle:
 - Installing `llmlingua` via `pip` (not `pip3`)
@@ -169,13 +169,13 @@ If you'd like to take this on, please open an issue or submit a PR. Any contribu
 ### 2026-03-15
 - Fixed `install.sh` to use `pip3` instead of `pip`
 - Fixed skill registration path to `~/.claude/skills/shorthand/`
-- Fixed LLMLingua CUDA error on macOS — added `device_map="cpu"`
-- Fixed terminal corruption — stats now go to `compress.log` instead of `/dev/tty`
+- Fixed LLMLingua CUDA error on macOS, added `device_map="cpu"`
+- Fixed terminal corruption, stats now go to `compress.log` instead of `/dev/tty`
 - `install.sh` now auto-registers the hook in `settings.json`
 - `install.sh` now pre-downloads the model so first use is instant
 - Added `uninstall.sh` for clean removal
 - Added `config.json` for user-configurable rate, threshold, and extra force tokens
 - Expanded default `force_tokens` to cover PHP, Python, JS/TS, Ruby, Go, Java, Rust, and more
-- Implemented `/shorthand dry-run` — logs stats but passes original prompt unchanged
-- Implemented `/shorthand status` — shows current mode and recent log activity
-- Added log rotation — trims to 200 lines when file exceeds 50KB
+- Implemented `/shorthand dry-run`, logs stats but passes original prompt unchanged
+- Implemented `/shorthand status`, shows current mode and recent log activity
+- Added log rotation, trims to 200 lines when file exceeds 50KB
