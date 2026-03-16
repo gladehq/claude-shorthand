@@ -1,5 +1,5 @@
 {
-  "name": "PromptCompressor",
+  "name": "claude-shorthand",
   "version": "1.0.0",
   "description": "Auto-shorthand long prompts and stack traces for token efficiency.",
   "hooks": [
