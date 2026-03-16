@@ -28,6 +28,22 @@ This plugin integrates **LLMLingua-2** directly into your Claude Code workflow t
 
 ## Installation
 
+### Option A: Claude Code Marketplace (recommended)
+
+```bash
+/plugin install claude-shorthand@gladehq
+```
+
+Then install the Python dependency:
+
+```bash
+pip3 install llmlingua
+```
+
+Restart Claude Code to activate.
+
+### Option B: Manual install
+
 1. **Clone or extract** the repository into your preferred directory.
 
 2. **Navigate to the folder:**
@@ -120,14 +136,27 @@ The following are protected out of the box across all languages:
 
 ## File Structure
 
+**Repository:**
+```
+claude-shorthand/
+├── .claude-plugin/
+│   └── plugin.json       # Marketplace manifest
+├── bin/
+│   └── compress.py       # Hook entrypoint
+├── skills/
+│   └── shorthand/
+│       └── SKILL.md      # /shorthand slash command
+└── config.json           # Default configuration
+```
+
+**Installed (manual install via `install.sh`):**
 ```
 ~/.claude/plugins/shorthand/
 ├── bin/
 │   ├── compress.py       # Hook entrypoint
 │   └── state.json        # Runtime state (on / off / dry-run)
 ├── compress.log          # Token savings log (auto-rotated at 50KB)
-├── config.json           # User configuration
-└── plugin.json           # Plugin metadata
+└── config.json           # User configuration
 
 ~/.claude/skills/shorthand/
 └── SKILL.md              # /shorthand slash command

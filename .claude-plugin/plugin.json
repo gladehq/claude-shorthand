@@ -1,0 +1,25 @@
+{
+  "name": "claude-shorthand",
+  "description": "LLMLingua-2 prompt compression hook for Claude Code — cut token usage by ~55%",
+  "version": "1.0.0",
+  "author": {
+    "name": "Dulitha Rajapaksha"
+  },
+  "homepage": "https://github.com/gladehq/claude-shorthand",
+  "repository": "https://github.com/gladehq/claude-shorthand",
+  "license": "MIT",
+  "keywords": ["prompt-compression", "token-optimization", "llmlingua", "claude-code", "developer-tools"],
+  "category": "productivity",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/bin/compress.py"
+          }
+        ]
+      }
+    ]
+  }
+}

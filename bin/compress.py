@@ -64,6 +64,8 @@ def write_log(msg):
         pass
 
 def main():
+    os.makedirs(os.path.join(PLUGIN_DIR, "bin"), exist_ok=True)
+
     try:
         input_data = sys.stdin.read()
         if not input_data.strip():
