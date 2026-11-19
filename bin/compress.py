@@ -31,7 +31,7 @@ DEFAULT_FORCE_TOKENS = [
 ]
 
 def load_config():
-    defaults = {"rate": 0.4, "threshold": 800, "extra_force_tokens": []}
+    defaults = {"rate": 0.4, "threshold": 800, "extra_force_tokens": [], "backend": "llmlingua"}
     if not os.path.exists(CONFIG_FILE):
         return defaults
     try:
@@ -87,7 +87,17 @@ def main():
     try:
         force_tokens = DEFAULT_FORCE_TOKENS + config.get("extra_force_tokens", [])
 
-        compressor = PromptCompressor(
+        Compressor, extra = PromptCompressor, {}
+        if config.get("backend") == "ctxprune":
+            try:
+                # Same API and return keys as llmlingua; CPU int8 ONNX model, no torch.
+                # protect=True: never drop an identifier, number or path.
+                from ctxprune.compat import PromptCompressor as Compressor
+                extra = {"protect": True}
+            except ImportError:
+                write_log("[Shorthand] backend 'ctxprune' not installed (pip install ctxprune); using llmlingua\n")
+
+        compressor = Compressor(
             model_name="microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank",
             use_llmlingua2=True,
             device_map="cpu"
@@ -96,7 +106,8 @@ def main():
         result = compressor.compress_prompt(
             prompt,
             rate=config["rate"],
-            force_tokens=force_tokens
+            force_tokens=force_tokens,
+            **extra
         )
         compressed = result["compressed_prompt"]
 
