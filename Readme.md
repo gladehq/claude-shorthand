@@ -121,6 +121,7 @@ Edit `~/.claude/plugins/shorthand/config.json` to customise behaviour:
 | `rate` | `0.4` | Compression aggressiveness. `0.2` = more aggressive, `0.6` = less |
 | `threshold` | `800` | Minimum characters before compression triggers |
 | `extra_force_tokens` | `[]` | Additional tokens to always preserve (merged with built-in defaults) |
+| `backend` | `"llmlingua"` | `"ctxprune"` swaps in [ctxprune](https://github.com/riceharvest/ctxprune)'s drop-in `PromptCompressor` (`pip install ctxprune`): CPU-only int8 ONNX model (~143 MB, no torch) and `protect=True`, which never drops an identifier, number or path. Falls back to llmlingua if not installed |
 
 ### Default Protected Tokens
 
